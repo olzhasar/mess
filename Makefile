@@ -7,4 +7,7 @@ install: build
 clean:
 	rm -rf ./bin
 
-.PHONY: build clean
+test:
+	go test ./...
+
+.PHONY: build clean test
