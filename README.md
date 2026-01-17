@@ -29,6 +29,11 @@ Filter repositories with uncommitted changes
 ```bash
 mess git <path> --dirty
 ```
+Use `-v` to include a quick diff summary (tracked changes across staged and unstaged files):
+
+```bash
+/path/to/repo  files=3  +10/-2  untracked=1
+```
 
 Filter repositories with last commit older than specified number of days
 

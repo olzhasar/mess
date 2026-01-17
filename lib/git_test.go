@@ -79,6 +79,52 @@ func TestFindGitReposDirty(t *testing.T) {
 	}
 }
 
+func TestDirtyStats(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	repo := filepath.Join(root, "repo")
+
+	if err := os.MkdirAll(repo, 0o755); err != nil {
+		t.Fatalf("mkdir repo: %v", err)
+	}
+
+	initGitRepo(t, repo)
+
+	commitFile(t, repo, "file.txt", "a\nb\nc\n", time.Now())
+	commitFile(t, repo, "file2.txt", "x\ny\n", time.Now())
+
+	if err := os.WriteFile(filepath.Join(repo, "file.txt"), []byte("a\nb\nc\nd\n"), 0o644); err != nil {
+		t.Fatalf("write file.txt: %v", err)
+	}
+	runGit(t, repo, "add", "file.txt")
+
+	if err := os.WriteFile(filepath.Join(repo, "file2.txt"), []byte("x\n"), 0o644); err != nil {
+		t.Fatalf("write file2.txt: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "untracked.txt"), []byte("u\nv\n"), 0o644); err != nil {
+		t.Fatalf("write untracked.txt: %v", err)
+	}
+
+	stats, err := GetDirtyStats(repo)
+	if err != nil {
+		t.Fatalf("DirtyStats: %v", err)
+	}
+
+	if stats.ChangedFiles != 3 {
+		t.Fatalf("expected 3 changed files, got %d", stats.ChangedFiles)
+	}
+	if stats.UntrackedFiles != 1 {
+		t.Fatalf("expected 1 untracked file, got %d", stats.UntrackedFiles)
+	}
+	if stats.AddedLines != 1 {
+		t.Fatalf("expected 1 added line, got %d", stats.AddedLines)
+	}
+	if stats.DeletedLines != 1 {
+		t.Fatalf("expected 1 deleted line, got %d", stats.DeletedLines)
+	}
+}
+
 func TestFindGitReposOlder(t *testing.T) {
 	t.Parallel()
 
