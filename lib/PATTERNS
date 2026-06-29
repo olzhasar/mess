@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.tox
+.nox
+node_modules

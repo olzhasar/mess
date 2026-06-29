@@ -8,30 +8,23 @@ import (
 	"path/filepath"
 )
 
-// TODO: Make this configurable
-var patterns = []string{
-	"*.pyc",
-	"__pycache__",
-	".mypy_cache",
-	".pytest_cache",
-	".ruff_cache",
-	".tox",
-	".nox",
-	"node_modules",
-}
-
 type CleanOptions struct {
 	Patterns  []string
 	Verbose   bool
 	Recursive bool
 }
 
-func getCleanPatterns(options CleanOptions) []string {
+func getCleanPatterns(options CleanOptions) ([]string, error) {
 	if len(options.Patterns) > 0 {
-		return options.Patterns
+		return options.Patterns, nil
 	}
 
-	return patterns
+	patterns, err := loadPatterns()
+	if err != nil {
+		return nil, err
+	}
+
+	return patterns, nil
 }
 
 func Clean(root string, options CleanOptions, stdout io.Writer) (int, error) {
@@ -40,7 +33,10 @@ func Clean(root string, options CleanOptions, stdout io.Writer) (int, error) {
 		return 0, err
 	}
 
-	patterns := getCleanPatterns(options)
+	patterns, err := getCleanPatterns(options)
+	if err != nil {
+		return 0, err
+	}
 
 	counter := 0
 	err = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
