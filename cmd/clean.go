@@ -7,6 +7,8 @@ import (
 
 func init() {
 	cleanCmd.Flags().BoolP("verbose", "v", false, "Print removed files/directories")
+	cleanCmd.Flags().BoolP("recursive", "r", false, "Recursively scan subdirectories")
+	cleanCmd.Flags().StringSlice("patterns", []string{}, "Patterns to be removed")
 	rootCmd.AddCommand(cleanCmd)
 }
 
@@ -21,17 +23,37 @@ node: node_modules
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		verbose, err := cmd.Flags().GetBool("verbose")
+		var err error
+		options := lib.CleanOptions{}
+
+		options.Verbose, err = cmd.Flags().GetBool("verbose")
 		if err != nil {
 			cmd.PrintErrln(err)
 			return
 		}
 
-		n, err := lib.Clean(args[0], verbose)
+		options.Patterns, err = cmd.Flags().GetStringSlice("patterns")
 		if err != nil {
 			cmd.PrintErrln(err)
+			return
 		}
 
-		cmd.Printf("Successfully removed %d items\n", n)
+		options.Recursive, err = cmd.Flags().GetBool("recursive")
+		if err != nil {
+			cmd.PrintErrln(err)
+			return
+		}
+
+		n, err := lib.Clean(args[0], options, cmd.OutOrStdout())
+		if err != nil {
+			cmd.PrintErrln(err)
+			return
+		}
+
+		if n > 0 {
+			cmd.Printf("Successfully removed %d items\n", n)
+		} else {
+			cmd.Println("Nothing found")
+		}
 	},
 }

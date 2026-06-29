@@ -1,60 +1,86 @@
-package lib
+package lib_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/olzhasar/mess/lib"
 )
 
-func TestCleanRemovesGlobs(t *testing.T) {
+func TestMain(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
 
-	paths := []string{
-		filepath.Join(root, "node_modules", "foo.js"),
-		filepath.Join(root, "__pycache__", "bar.pyc"),
-		filepath.Join(root, ".mypy_cache", "baz"),
-		filepath.Join(root, "keep", "keep.txt"),
-		filepath.Join(root, "test.pyc"),
-	}
+	mkDirs(t, root,
+		[]string{
+			"node_modules",
+			"foo",
+			"foo/bar",
+			"foo/bar/node_modules",
+		})
+	mkFiles(t, root,
+		[]string{
+			"main.pyc",
+			"README.md",
+			"foo/specific",
+			"foo/bar/test.pyc",
+		})
 
-	for _, path := range paths {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatalf("mkdir %s: %v", path, err)
-		}
-		if err := os.WriteFile(path, []byte("data"), 0o644); err != nil {
-			t.Fatalf("write %s: %v", path, err)
-		}
-	}
-
-	removed, err := Clean(root, false)
+	got, err := lib.Clean(root, lib.CleanOptions{Recursive: true, Patterns: []string{
+		"*.pyc",
+		"node_modules",
+		"foo/specific",
+		"README", // partial match should be excluded
+	}}, nil)
 	if err != nil {
 		t.Fatalf("Clean: %v", err)
 	}
+	assertPathDeleted(t, root, "main.pyc")
+	assertPathDeleted(t, root, "foo/specific")
+	assertPathDeleted(t, root, "foo/bar/test.pyc")
+	assertPathDeleted(t, root, "node_modules")
+	assertPathDeleted(t, root, "foo/bar/node_modules")
+	assertPathExists(t, root, "README.md")
+	assertPathExists(t, root, "foo")
+	assertPathExists(t, root, "foo/bar")
 
-	if removed != 4 {
-		t.Fatalf("expected 4 items removed, got %d", removed)
-	}
-
-	removedPaths := []string{
-		filepath.Join(root, "node_modules"),
-		filepath.Join(root, "__pycache__"),
-		filepath.Join(root, ".mypy_cache"),
-		filepath.Join(root, "test.pyc"),
-	}
-	for _, path := range removedPaths {
-		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			t.Fatalf("expected %s to be removed", path)
-		}
-	}
-
-	if _, err := os.Stat(filepath.Join(root, "keep", "keep.txt")); err != nil {
-		t.Fatalf("expected keep file to remain: %v", err)
-	}
+	assertDeletedCount(t, 5, got)
 }
 
-func TestCleanInvalidPath(t *testing.T) {
+func TestNoRecurse(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	mkDirs(t, root, []string{
+		"foo",
+		"foo/bar",
+		"bar", // should be deleted
+	})
+	mkFiles(t, root, []string{
+		"main.pyc",
+		"foo/test.pyc", // should stay
+	})
+
+	got, err := lib.Clean(root, lib.CleanOptions{
+		Recursive: false,
+		Patterns: []string{
+			"*.pyc",
+			"bar",
+		}}, nil)
+	if err != nil {
+		t.Fatalf("Clean: %v", err)
+	}
+	assertPathDeleted(t, root, "main.pyc")
+	assertPathDeleted(t, root, "bar")
+	assertPathExists(t, root, "foo/bar")
+	assertPathExists(t, root, "foo/test.pyc")
+
+	assertDeletedCount(t, 2, got)
+}
+
+func TestInvalidPath(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
@@ -63,8 +89,60 @@ func TestCleanInvalidPath(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	_, err := Clean(file, false)
+	_, err := lib.Clean(file, lib.CleanOptions{Verbose: false}, nil)
 	if err == nil {
 		t.Fatalf("expected error for file path")
+	}
+}
+
+func mkDirs(t *testing.T, root string, paths []string) {
+	t.Helper()
+
+	for _, path := range paths {
+		fullPath := filepath.Join(root, path)
+		if err := os.Mkdir(fullPath, 0o755); err != nil {
+			t.Fatal("Failed to create directory", fullPath, err)
+		}
+	}
+}
+
+func mkFiles(t *testing.T, root string, paths []string) {
+	t.Helper()
+
+	for _, path := range paths {
+		fullPath := filepath.Join(root, path)
+		if err := os.WriteFile(fullPath, []byte{}, 0o644); err != nil {
+			t.Fatal("Failed to created a file", fullPath, err)
+		}
+	}
+}
+
+func assertPathDeleted(tb testing.TB, root string, path string) {
+	tb.Helper()
+
+	fullPath := filepath.Join(root, path)
+
+	_, err := os.Stat(fullPath)
+	if err == nil {
+		tb.Fatalf("assert failed: path %s exists", fullPath)
+	}
+}
+
+func assertPathExists(tb testing.TB, root string, path string) {
+	tb.Helper()
+
+	fullPath := filepath.Join(root, path)
+
+	_, err := os.Stat(fullPath)
+	if err != nil {
+		tb.Fatalf("assert failed: path %s does not exist", fullPath)
+	}
+}
+
+func assertDeletedCount(tb testing.TB, want int, got int) {
+	tb.Helper()
+
+	if want != got {
+		tb.Fatalf("assert failed: want %d removed paths, got %d", want, got)
 	}
 }
