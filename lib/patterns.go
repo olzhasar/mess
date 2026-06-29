@@ -62,8 +62,6 @@ func readPatterns(reader io.Reader) ([]string, error) {
 		}
 		existing[line] = true
 
-		fmt.Println(line)
-
 		patterns = append(patterns, line)
 	}
 

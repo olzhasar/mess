@@ -1,8 +1,131 @@
+# Python
 *.pyc
+*.pyo
+*.pyd
 __pycache__
 .mypy_cache
 .pytest_cache
 .ruff_cache
 .tox
 .nox
+.coverage
+.coverage.*
+htmlcov
+pip-wheel-metadata
+.hypothesis
+.pyre
+.pytype
+
+# JavaScript
 node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+.npm
+.yarn/cache
+.pnpm-store
+.nyc_output
+coverage
+.parcel-cache
+.next
+.nuxt
+.svelte-kit
+
+# TypeScript
+*.tsbuildinfo
+
+# Go
+coverage.out
+
+# Rust
+Cargo.lock.orig
+
+# Java
+build
+out
+.gradle
+*.class
+
+# Kotlin
+build
+out
+.gradle
+*.class
+
+# Scala
+.bloop
+.metals
+.scala-build
+
+# C
+*.o
+*.obj
+*.a
+*.dSYM
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+
+# C++
+*.o
+*.obj
+*.a
+*.dSYM
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+
+# C#
+TestResults
+*.user
+*.suo
+
+# Ruby
+.bundle
+vendor/bundle
+.rspec_status
+
+# PHP
+.phpunit.result.cache
+.phpunit.cache
+coverage
+
+# Swift
+.build
+DerivedData
+*.xcodeproj/xcuserdata
+*.xcworkspace/xcuserdata
+
+# Dart
+.dart_tool
+build
+
+# Elixir
+_build
+
+# Erlang
+_build
+*.beam
+
+# Haskell
+.stack-work
+dist
+dist-newstyle
+
+# R
+.Rhistory
+.RData
+.Rproj.user
+
+# Julia
+*.ji
+
+# Lua
+luac.out
+*.luac
+
+# Zig
+zig-cache
+zig-out
+.zig-cache
