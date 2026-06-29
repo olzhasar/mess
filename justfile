@@ -1,5 +1,3 @@
-set shell := ["zsh", "-cu"]
-
 default: build
 
 build:
@@ -13,6 +11,9 @@ clean:
 
 test:
 	go test ./...
+
+test_watch:
+	rg --files -g '*.go' -g justfile | entr -c just test
 
 fmt:
 	gofmt -w .
