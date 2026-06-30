@@ -8,8 +8,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "mess",
-	Short: "Clean up your development mess",
-	Long:  "Usage: mess <command> <path>",
+	Short: "Clean temporary development files",
+	Long:  "mess removes common temporary development files, caches, and build artifacts from a directory.",
 }
 
 func Execute() {
@@ -17,8 +17,4 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
-}
-
-func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

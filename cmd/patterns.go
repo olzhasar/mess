@@ -11,7 +11,7 @@ func init() {
 
 var patternsCmd = &cobra.Command{
 	Use:   "patterns",
-	Short: "Show existing patterns",
+	Short: "Show active cleanup patterns",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		patterns, err := lib.LoadPatterns()

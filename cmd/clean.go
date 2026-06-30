@@ -8,22 +8,24 @@ import (
 )
 
 func init() {
-	cleanCmd.Flags().BoolP("verbose", "v", false, "Print removed files/directories")
-	cleanCmd.Flags().BoolP("recursive", "r", false, "Recursively scan subdirectories")
-	cleanCmd.Flags().Bool("no-size", false, "Do not calculate freed disk space (faster for large directories)")
-	cleanCmd.Flags().StringSlice("patterns", []string{}, "Patterns to be removed")
+	cleanCmd.Flags().BoolP("verbose", "v", false, "Print each removed path")
+	cleanCmd.Flags().BoolP("recursive", "r", false, "Scan subdirectories recursively")
+	cleanCmd.Flags().Bool("no-size", false, "Skip freed-space calculation (faster for large directories)")
+	cleanCmd.Flags().StringSlice("patterns", []string{}, "Comma-separated patterns to remove instead of configured patterns")
 	rootCmd.AddCommand(cleanCmd)
 }
 
 var cleanCmd = &cobra.Command{
 	Use:   "clean [path]",
-	Short: "Delete temporary files",
-	Long: `Delete temporary files in the specified path
+	Short: "Delete temporary development files",
+	Long: `Delete temporary development files from path.
 
-Patterns:
-python: *.pyc, __pycache__, .mypy_cache, .pytest_cache, .ruff_cache, .tox, .nox
-node: node_modules
-	`,
+By default, mess checks only direct children of path. Use --recursive or -r to scan subdirectories.
+
+	Built-in patterns are used unless a patterns file exists or --patterns is provided. To check which patterns are currently configured, run: mess patterns`,
+	Example: `  mess clean ~/dev/project
+  mess clean -r ~/dev
+  mess clean -r --patterns "node_modules,*.pyc" ~/dev`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
