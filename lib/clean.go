@@ -26,7 +26,7 @@ func getCleanPatterns(options CleanOptions) ([]string, error) {
 		return options.Patterns, nil
 	}
 
-	patterns, err := loadPatterns()
+	patterns, err := LoadPatterns()
 	if err != nil {
 		return nil, err
 	}

@@ -86,7 +86,7 @@ func readPatternsFromFile(path string) ([]string, error) {
 	return readPatterns(file)
 }
 
-func loadPatterns() ([]string, error) {
+func LoadPatterns() ([]string, error) {
 	filePath := findPatternsFile()
 	if filePath == "" {
 		return readPatterns(strings.NewReader(builtInPatternsFile))
