@@ -6,12 +6,19 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 type CleanOptions struct {
 	Patterns  []string
 	Verbose   bool
 	Recursive bool
+	CalcFreed bool
+}
+
+type CleanResult struct {
+	BytesFreed uint64
+	Count      uint64
 }
 
 func getCleanPatterns(options CleanOptions) ([]string, error) {
@@ -27,18 +34,19 @@ func getCleanPatterns(options CleanOptions) ([]string, error) {
 	return patterns, nil
 }
 
-func Clean(root string, options CleanOptions, stdout io.Writer) (int, error) {
+func Clean(root string, options CleanOptions, stdout io.Writer) (CleanResult, error) {
+	result := CleanResult{}
+
 	rootPath, err := parsePath(root)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 
 	patterns, err := getCleanPatterns(options)
 	if err != nil {
-		return 0, err
+		return result, err
 	}
 
-	counter := 0
 	err = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -72,11 +80,21 @@ func Clean(root string, options CleanOptions, stdout io.Writer) (int, error) {
 				if options.Verbose {
 					fmt.Fprintln(stdout, "Removing ", relPath)
 				}
+
+				var size uint64 = 0
+				if options.CalcFreed {
+					size, err = diskUsage(path)
+					if err != nil {
+						return err
+					}
+				}
+
 				removeErr := os.RemoveAll(path)
 				if removeErr != nil {
 					return removeErr
 				}
-				counter++
+				result.Count++
+				result.BytesFreed += size
 
 				if d.IsDir() {
 					return fs.SkipDir
@@ -87,11 +105,35 @@ func Clean(root string, options CleanOptions, stdout io.Writer) (int, error) {
 		}
 
 		if !options.Recursive && d.IsDir() {
-			return filepath.SkipDir
+			return fs.SkipDir
 		}
 
 		return nil
 	})
 
-	return counter, err
+	return result, err
+}
+
+func diskUsage(root string) (uint64, error) {
+	var total uint64 = 0
+
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+
+		stat, ok := info.Sys().(*syscall.Stat_t)
+		if ok {
+			total += uint64(stat.Blocks) * 512
+		}
+
+		return nil
+	})
+
+	return total, err
 }

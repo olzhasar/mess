@@ -1,6 +1,7 @@
 package lib_test
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,7 +47,7 @@ func TestMain(t *testing.T) {
 	assertPathExists(t, root, "foo")
 	assertPathExists(t, root, "foo/bar")
 
-	assertDeletedCount(t, 5, got)
+	assertDeletedCount(t, 5, int(got.Count))
 }
 
 func TestNoRecurse(t *testing.T) {
@@ -77,7 +78,35 @@ func TestNoRecurse(t *testing.T) {
 	assertPathExists(t, root, "foo/bar")
 	assertPathExists(t, root, "foo/test.pyc")
 
-	assertDeletedCount(t, 2, got)
+	assertDeletedCount(t, 2, int(got.Count))
+}
+
+func TestCalculatesFreed(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	mkDirs(t, root, []string{
+		"node_modules",
+		"node_modules/package",
+	})
+
+	contents := bytes.Repeat([]byte("b"), 1<<20)
+	mkFileWithContent(t, root, "node_modules/package/index.js", contents)
+
+	got, err := lib.Clean(root, lib.CleanOptions{
+		Recursive: true,
+		CalcFreed: true,
+		Patterns:  []string{"node_modules"},
+	}, nil)
+	if err != nil {
+		t.Fatalf("Clean: %v", err)
+	}
+
+	assertPathDeleted(t, root, "node_modules")
+	assertDeletedCount(t, 1, int(got.Count))
+	if got.BytesFreed < uint64(len(contents)) {
+		t.Fatalf("assert failed: want at least %d bytes freed, got %d", len(contents), got.BytesFreed)
+	}
 }
 
 func TestInvalidPath(t *testing.T) {
@@ -114,6 +143,15 @@ func mkFiles(t *testing.T, root string, paths []string) {
 		if err := os.WriteFile(fullPath, []byte{}, 0o644); err != nil {
 			t.Fatal("Failed to created a file", fullPath, err)
 		}
+	}
+}
+
+func mkFileWithContent(t *testing.T, root string, path string, contents []byte) {
+	t.Helper()
+
+	fullPath := filepath.Join(root, path)
+	if err := os.WriteFile(fullPath, contents, 0o644); err != nil {
+		t.Fatal("Failed to create a file", fullPath, err)
 	}
 }
 

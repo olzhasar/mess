@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/olzhasar/mess/lib"
 	"github.com/spf13/cobra"
 )
@@ -8,6 +10,7 @@ import (
 func init() {
 	cleanCmd.Flags().BoolP("verbose", "v", false, "Print removed files/directories")
 	cleanCmd.Flags().BoolP("recursive", "r", false, "Recursively scan subdirectories")
+	cleanCmd.Flags().Bool("no-size", false, "Do not calculate freed disk space (faster for large directories)")
 	cleanCmd.Flags().StringSlice("patterns", []string{}, "Patterns to be removed")
 	rootCmd.AddCommand(cleanCmd)
 }
@@ -44,16 +47,45 @@ node: node_modules
 			return
 		}
 
-		n, err := lib.Clean(args[0], options, cmd.OutOrStdout())
+		noSize, err := cmd.Flags().GetBool("no-size")
+		if err != nil {
+			cmd.PrintErrln(err)
+			return
+		}
+		options.CalcFreed = !noSize
+
+		result, err := lib.Clean(args[0], options, cmd.OutOrStdout())
 		if err != nil {
 			cmd.PrintErrln(err)
 			return
 		}
 
-		if n > 0 {
-			cmd.Printf("Successfully removed %d items\n", n)
+		if result.Count > 0 {
+			cmd.Printf("Successfully removed %d item(s)\n", result.Count)
+			if options.CalcFreed {
+				cmd.Printf("%s freed\n", formatBytes(result.BytesFreed))
+			}
 		} else {
 			cmd.Println("Nothing found")
 		}
 	},
+}
+
+func formatBytes(bytes uint64) string {
+	const step = 1024
+
+	if bytes < step {
+		return fmt.Sprintf("%d B", bytes)
+	}
+
+	result := float64(bytes)
+
+	for _, unit := range []string{"K", "M", "G", "T", "P"} {
+		result /= float64(step)
+		if result < step {
+			return fmt.Sprintf("%.1f%s", result, unit)
+		}
+	}
+
+	return fmt.Sprintf("%.1f%s", result, "PB")
 }
