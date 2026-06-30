@@ -3,9 +3,6 @@ default: build
 build:
 	go build -o ./bin/ .
 
-install: build
-	install -m 0755 ./bin/* ~/.local/bin/
-
 clean:
 	rm -rf ./bin
 

@@ -10,8 +10,23 @@ Why a separate tool instead of a bash script?
 
 ## Installation
 
+With go:
+
 ```bash
 go install github.com/olzhasar/mess@latest
+```
+
+From source:
+
+```bash
+make install
+```
+
+By default, this installs `mess` to `~/.local/bin`. To install elsewhere, set
+`PREFIX`:
+
+```bash
+make install PREFIX=/usr/local
 ```
 
 ## Usage
