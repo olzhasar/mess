@@ -1,12 +1,12 @@
 # mess
 
-A cli tool to spot and clean up mess in your projects.
+`mess` deletes common temporary development files in your projects. It ships with common cleanup patterns for popular programming languages like caches, build artifacts, bytecode files, linters output, etc.
 
-## Features
-
-- Find unfinished work
-- Find outdated repositories
-- Clean up temporary files
+Why a separate tool instead of a bash script?
+- Reports reclaimed disk space
+- Easy to configure and override patterns
+- Simple and fast
+- Reduces the number of bash scripts in the world
 
 ## Installation
 
@@ -14,69 +14,71 @@ A cli tool to spot and clean up mess in your projects.
 go install github.com/olzhasar/mess@latest
 ```
 
-## Commands
+## Usage
 
-### Git
+**CAUTION:** *this tool deletes files and directories from your filesystem!*
 
-Find all git repositories in the specified path. Mainly useful in pipelines
+*While the pre-configured patterns should be safe for most users, please, read the patterns list first and ensure it fits your needs. See [Patterns](#patterns)*
 
-```bash
-mess git <path>
+### Clean a directory
+
+Clean a specific path (scans only direct children by default):
+
+```sh
+mess clean ~/my_projects
 ```
 
-Filter repositories with uncommitted changes
+Scan subdirectories too:
 
-```bash
-mess git <path> --dirty
-```
-Use `-v` to include a quick diff summary (tracked changes across staged and unstaged files):
-
-```bash
-/path/to/repo  files=3  +10/-2  untracked=1
+```sh
+mess clean -r ~/my_projects
 ```
 
-Filter repositories with last commit older than specified number of days
+Print each removed path:
 
-```bash
-mess git <path> --older <days>
+```sh
+mess clean -v ~/my_projects
 ```
 
-### Clean
+Use custom patterns for one run. These replace the configured patterns:
 
-Remove temporary files from the specified path
-
-```bash
-mess clean <path>
+```sh
+mess clean -r -p "node_modules,*.pyc" ~/dev/lots-of-js/
 ```
 
-**Deletes** the following files and directories:
+### Patterns
 
-- `*.pyc` — Python compiled files
-- `__pycache__` — Python cache directory
-- `.mypy_cache` — MyPy cache directory
-- `.pytest_cache` — Pytest cache directory
-- `.ruff_cache` — Ruff cache directory
-- `.tox` — Tox virtual environment files
-- `.nox` — Nox virtual environment files
-- `node_modules` — Node.js dependencies
+To display the currently configured patterns, run:
 
-## Performance
-
-`mess git` is significantly faster for finding Git repositories compared to the `find` + `test` alternative:
-
-```bash
-find <path> -type d -execdir test -d {}/.git \; -prune -print
+```sh
+mess patterns
 ```
 
-Scanning a 300GB+ home directory on an M1 Macbook Pro:
+By default, `mess` uses its built-in [PATTERNS](./lib/PATTERNS). To override them you can use either use a `-p` flag or you can create one of these files:
 
-```bash
-mess git ~  1.90s user 7.22s system 39% cpu 23.096 total
-find ~ -type d -execdir test -d {}/.git \; -print -prune  60.76s user 184.72s system 70% cpu 5:46.94 total
+- `~/.mess_patterns`
+- `<user-config-dir>/mess/patterns`
+
+The user config directory is provided by your operating system. On Linux it's `$XDG_CONFIG_HOME` (defaults to `~/.config`), on Darwin - `~/Library/Application Support/`
+
+Pattern files use one pattern per line. Empty lines and lines starting with `#`
+are ignored.
+
+Patterns use a shell glob-style syntax.
+
+Example:
+
+```sh
+# Python
+*.pyc
+__pycache__
+
+# JavaScript
+node_modules
+
+# Specific path
+foo/bar/
 ```
-
-`mess` did 15X better in this case.
-
 
 ## License
 MIT
