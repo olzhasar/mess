@@ -10,13 +10,18 @@ Why a separate tool instead of a bash script?
 
 ## Installation
 
-With go:
+### Pre-built binaries
+
+Download a ready-to-use pre-built binary for your platform (Linux and macOS are currently supported) in 
+[GitHub releases](https://github.com/olzhasar/mess/releases).
+
+### Install with go
 
 ```bash
 go install github.com/olzhasar/mess@latest
 ```
 
-From source:
+### Building from source
 
 ```bash
 make install
